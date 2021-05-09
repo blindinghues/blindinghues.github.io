@@ -11,6 +11,7 @@ class Playground {
         var camera = new BABYLON.ArcRotateCamera("Camera", 0, Math.PI / 2, 10, new BABYLON.Vector3(0, 0, 0), scene);
         camera.lowerRadiusLimit = 5;
         camera.upperRadiusLimit = 20;
+        camera.panningSensibility = 0;
         // This targets the camera to scene origin
         camera.setTarget(BABYLON.Vector3.Zero());
         // This attaches the camera to the canvas
