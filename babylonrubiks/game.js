@@ -2,7 +2,7 @@ class Playground {
     static CreateScene(engine, canvas) {
         // This creates a basic Babylon Scene object (non-mesh)
         var scene = new BABYLON.Scene(engine);
-        const hdrTexture = BABYLON.CubeTexture.CreateFromPrefilteredData("textures/room.dds", scene);
+        const hdrTexture = BABYLON.CubeTexture.CreateFromPrefilteredData("textures/environment.dds", scene);
         scene.environmentTexture = hdrTexture;
         scene.createDefaultSkybox(scene.environmentTexture);
         scene.ambientColor = new BABYLON.Color3(0.5, 0.5, 0.5);
