@@ -60,11 +60,13 @@ class Playground {
             }
 
             private loadSounds() {
+                this.gameWinSound = new BABYLON.Sound('', `sounds/ditties/gamewin.mp3`, scene, null, {
+                    loop: false, autoplay: false
+                });
                 for (let i = 1; i <= 14; i++) {
                     this.rotateSounds.push(
                         new BABYLON.Sound('', `sounds/rotations/${i}.ogg`, scene, null, {
-                            loop: false,
-                            autoplay: false
+                            loop: false, autoplay: false
                         })
                     )
                 }
@@ -206,6 +208,12 @@ class Playground {
                 const layerOptions: Array<number> = [-1, 0, 1];
                 let movementCount: number = 100;
                 const randomRotationInterval = setInterval(() => {
+                    rubiksCube.rotate(
+                        getRandomElementFromArray(axisOptions),
+                        getRandomElementFromArray(layerOptions),
+                        getRandomElementFromArray(ccwOptions),
+                        4
+                    );
                     if (--movementCount == 0) {
                         clearInterval(randomRotationInterval);
                         this.enabled = true;
@@ -218,12 +226,6 @@ class Playground {
                             onFinished();
                         return;
                     }
-                    rubiksCube.rotate(
-                        getRandomElementFromArray(axisOptions),
-                        getRandomElementFromArray(layerOptions),
-                        getRandomElementFromArray(ccwOptions),
-                        4
-                    );
                 }, 50);
             }
 
@@ -305,6 +307,7 @@ class Playground {
                 this.enabled = false;
                 clearInterval(this.timeUpdateHandle);
                 this.onGameEnd.notifyObservers();
+                this.gameWinSound.play();
             }
 
             protected setMoves(moves: number) {
@@ -323,6 +326,7 @@ class Playground {
             public onGameEnd: BABYLON.Observable<void> = new BABYLON.Observable();
 
             private rotateSounds: Array<BABYLON.Sound> = [];
+            private gameWinSound: BABYLON.Sound;
 
             private materialToSidePlanes: Map<BABYLON.Material, Array<BABYLON.AbstractMesh>> = new Map();
             private sidePlaneToCubeMesh: Map<BABYLON.AbstractMesh, BABYLON.AbstractMesh> = new Map();
