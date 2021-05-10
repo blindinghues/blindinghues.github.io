@@ -420,31 +420,35 @@ class Playground {
                 const iconContainer: BABYLON.GUI.Container = new BABYLON.GUI.Container('');
                 iconContainer.hoverCursor = "pointer";
                 iconContainer.isPointerBlocker = true;
-                iconContainer.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
-                iconContainer.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
                 gui.addControl(iconContainer);
                 this.container = iconContainer;
                 const iconImage: BABYLON.GUI.Image = new BABYLON.GUI.Image('', imageUrl);
                 iconImage.width = SocialMediaIcon.DEFAULT_SCALAR; iconImage.height = SocialMediaIcon.DEFAULT_SCALAR;
-                iconContainer.onPointerEnterObservable.add(() => {
-                    iconImage.width = 1; iconImage.height = 1;
-                });
-                iconContainer.onPointerOutObservable.add(() => {
-                    iconImage.width = SocialMediaIcon.DEFAULT_SCALAR; iconImage.height = SocialMediaIcon.DEFAULT_SCALAR;
-                });
+                iconContainer.onPointerEnterObservable.add(() => this.expand());
+                iconContainer.onPointerOutObservable.add(() => this.shrink());
                 iconContainer.onPointerClickObservable.add(() => {
+                    this.shrink();
                     window.open(linkUrl,'_blank');
                 });
                 iconContainer.addControl(iconImage);
+                this.iconImage = iconImage;
+            }
+            private expand() {
+                this.iconImage.width = 1; this.iconImage.height = 1;
+            }
+            private shrink() {
+                this.iconImage.width = SocialMediaIcon.DEFAULT_SCALAR; this.iconImage.height = SocialMediaIcon.DEFAULT_SCALAR;
             }
             public getContainer(): BABYLON.GUI.Container { return this.container; }
 
             private static DEFAULT_SCALAR: number = 0.9;
             private container: BABYLON.GUI.Container;
+            private iconImage: BABYLON.GUI.Container;
         }
 
         const twitterIcon: SocialMediaIcon = new SocialMediaIcon('icons/twitter.svg', 'https://twitter.com/blindinghues');
         twitterIcon.getContainer().width = '75px'; twitterIcon.getContainer().height = '75px';
+        twitterIcon.getContainer().left = '0px';
         twitterIcon.getContainer().verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
         twitterIcon.getContainer().horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
 
