@@ -3,11 +3,7 @@ class Playground {
         // This creates a basic Babylon Scene object (non-mesh)
         var scene = new BABYLON.Scene(engine);
 
-        const hdrTexture = BABYLON.CubeTexture.CreateFromPrefilteredData("textures/environment.dds", scene);
-        scene.environmentTexture = hdrTexture;
-        scene.createDefaultSkybox(scene.environmentTexture);
-
-        scene.ambientColor = new BABYLON.Color3(0.5, 0.5, 0.5);
+        scene.ambientColor = new BABYLON.Color3(1.0, 1.0, 1.0);
 
         scene.clearColor = new BABYLON.Color4(0.3, 0.3, 0.3, 1.0);
 
@@ -76,7 +72,8 @@ class Playground {
 
             private createCubes() {
                 const blackBoxMaterial: BABYLON.StandardMaterial = new BABYLON.StandardMaterial('', scene);
-                blackBoxMaterial.diffuseColor = BABYLON.Color3.Black();
+                blackBoxMaterial.ambientColor = BABYLON.Color3.Black();
+                blackBoxMaterial.disableLighting = true;
      
                 // create 3*3*3 cube grid
                 for (let x = -1; x <= 1; x++) {
@@ -108,14 +105,10 @@ class Playground {
                         rotation: new BABYLON.Vector3(0, 0, 0), positionOffset: new BABYLON.Vector3(0, 0, -1)
                     }
                 ].map(planeDetails => {
-                    const pbr = new BABYLON.PBRMaterial("pbr", scene);
-
-                    pbr.metallic = 0.0;
-                    pbr.roughness = 0.5;    
-                    pbr.albedoColor = planeDetails.color;
-                    pbr.sheen.isEnabled = true;
-                    pbr.reflectionTexture = hdrTexture;
-                    planeDetails.material = pbr;
+                    const material: BABYLON.StandardMaterial = new BABYLON.StandardMaterial('', scene);
+                    material.ambientColor = planeDetails.color;
+                    material.disableLighting = true;
+                    planeDetails.material = material;
                     return planeDetails;
                 });
 
