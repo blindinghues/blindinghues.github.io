@@ -416,13 +416,45 @@ class Playground {
         timeValueText.text = '';
         rubiksCube.onClockTick.add((timeStr) => timeValueText.text = timeStr);
 
-        const infoText: BABYLON.GUI.TextBlock = new BABYLON.GUI.TextBlock('', '@blindinghues');
-        infoText.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
-        infoText.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
-        infoText.resizeToFit = true;
-        infoText.color = 'white';
-        infoText.fontSizeInPixels = 20;
-        gui.addControl(infoText);
+        class SocialMediaIcon {
+            public constructor(imageUrl: string, linkUrl: string) {
+                const iconContainer: BABYLON.GUI.Container = new BABYLON.GUI.Container('');
+                iconContainer.hoverCursor = "pointer";
+                iconContainer.isPointerBlocker = true;
+                iconContainer.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
+                iconContainer.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+                gui.addControl(iconContainer);
+                this.container = iconContainer;
+                const iconImage: BABYLON.GUI.Image = new BABYLON.GUI.Image('', imageUrl);
+                iconImage.width = SocialMediaIcon.DEFAULT_SCALAR; iconImage.height = SocialMediaIcon.DEFAULT_SCALAR;
+                iconContainer.onPointerEnterObservable.add(() => {
+                    iconImage.width = 1; iconImage.height = 1;
+                });
+                iconContainer.onPointerOutObservable.add(() => {
+                    iconImage.width = SocialMediaIcon.DEFAULT_SCALAR; iconImage.height = SocialMediaIcon.DEFAULT_SCALAR;
+                });
+                iconContainer.onPointerClickObservable.add(() => {
+                    window.open(linkUrl,'_blank');
+                });
+                iconContainer.addControl(iconImage);
+            }
+            public getContainer(): BABYLON.GUI.Container { return this.container; }
+
+            private static DEFAULT_SCALAR: number = 0.9;
+            private container: BABYLON.GUI.Container;
+        }
+
+        const twitterIcon: SocialMediaIcon = new SocialMediaIcon('icons/twitter.svg', 'https://twitter.com/blindinghues');
+        twitterIcon.getContainer().width = '75px'; twitterIcon.getContainer().height = '75px';
+        twitterIcon.getContainer().verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
+        twitterIcon.getContainer().horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+
+        const githubIcon: SocialMediaIcon = new SocialMediaIcon('icons/github.svg', 'https://github.com/blindinghues');
+        githubIcon.getContainer().width = '75px'; githubIcon.getContainer().height = '75px';
+        githubIcon.getContainer().left = '80px';
+        githubIcon.getContainer().verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
+        githubIcon.getContainer().horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+
 
         rubiksCube.initEvents();
 
