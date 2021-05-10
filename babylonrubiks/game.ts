@@ -377,6 +377,16 @@ class Playground {
         statsPanel.left = '-20px';
         gui.addControl(statsPanel);
 
+        const bottomText: BABYLON.GUI.TextBlock = new BABYLON.GUI.TextBlock('');
+        bottomText.resizeToFit = true;
+        bottomText.text = 'Rotate segments by dragging across the tiles';
+        bottomText.top = "-140px";
+        bottomText.fontSize = '40px';
+        bottomText.linkWithMesh(rubiksCube.getTransformNode());
+        bottomText.color = 'white';
+        bottomText.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
+        gui.addControl(bottomText);
+      
         const createStatTextBlock: (string?) => BABYLON.GUI.TextBlock = (name?: string) => {
             const textBlock: BABYLON.GUI.TextBlock = new BABYLON.GUI.TextBlock(name === undefined ? '' : name);
             textBlock.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
