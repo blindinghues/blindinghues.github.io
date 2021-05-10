@@ -382,7 +382,6 @@ class Playground {
         bottomText.text = 'Rotate segments by dragging across the tiles';
         bottomText.top = "-140px";
         bottomText.fontSize = '40px';
-        bottomText.linkWithMesh(rubiksCube.getTransformNode());
         bottomText.color = 'white';
         bottomText.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
         gui.addControl(bottomText);
