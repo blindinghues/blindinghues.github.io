@@ -48,7 +48,6 @@ class Playground {
         class RubiksCube {
             public constructor() {
                 this.transformNode = new BABYLON.TransformNode('', scene);
-
                 this.createCubes();
                 this.setupDragCallbacks();
                 this.loadSounds();
@@ -131,6 +130,7 @@ class Playground {
                         });
                 });
             }
+
             private setupDragCallbacks() {
                 let firstPick: BABYLON.AbstractMesh = null;
                 scene.onPointerObservable.add(eventData => {
@@ -251,9 +251,10 @@ class Playground {
                     }
                 });
                 
-                if (cubesToRotate.length != 9) {
+                // if we can't rotate all the cubes in the layer, don't allow the rotation to occur
+                if (cubesToRotate.length != 9)
                     return false;
-                }
+
                 cubesToRotate.forEach(cube => this.animatingCubes.add(cube));
 
                 // parent cubes to transform node and rotate it
@@ -269,21 +270,31 @@ class Playground {
                 const animation = BABYLON.Animation.CreateAndStartAnimation('', transformNode, `rotation.${axis.getComponent()}`,
                     60, 15 / speedModifier, 0, rotationInRadians, 0);
 
-                // play sound effect
+                // play rotating sound effect
                 getRandomElementFromArray(this.rotateSounds).play();
 
-                // when the animation is finished, unparent cubes from transform node
+                // when the animation is finished...
                 animation.onAnimationEnd = () => {
+                    // unparent cubes from transform node
                     cubesToRotate.forEach(cube => {
                         cube.setParent(this.transformNode);
-                        cube.position.x = Math.round(cube.position.x);
-                        cube.position.y = Math.round(cube.position.y);
-                        cube.position.z = Math.round(cube.position.z);
+                        // round positions & rotations to avoid accumulating FP errors
+                        cube.position.set(
+                            Math.round(cube.position.x),
+                            Math.round(cube.position.y),
+                            Math.round(cube.position.z)
+                        );
+                        cube.rotation.set(
+                            Math.round(cube.rotation.x / (Math.PI / 2)) * (Math.PI / 2),
+                            Math.round(cube.rotation.y / (Math.PI / 2)) * (Math.PI / 2),
+                            Math.round(cube.rotation.z / (Math.PI / 2)) * (Math.PI / 2)
+                        );
                     });
                     transformNode.dispose();
                     cubesToRotate.forEach(cube => this.animatingCubes.delete(cube));
+                    // check to see if the rubiks cube is now solved
                     if (!this.shuffling && this.isSolved()) {
-                        this.gameOver();
+                        this.endGame();
                     }
                 };
                 
@@ -303,20 +314,20 @@ class Playground {
                 return valid;
             }
 
-            private gameOver() {
+            private endGame() {
                 this.enabled = false;
                 clearInterval(this.timeUpdateHandle);
                 this.onGameEnd.notifyObservers();
                 this.gameWinSound.play();
             }
 
-            protected setMoves(moves: number) {
+            private setMoves(moves: number) {
                 if (this.shuffling)
                     return;
                 this.moves = moves;
                 this.onMoveMade.notifyObservers(this.moves);
             }
-            protected setTime(timeInMS: number) {
+            private setTime(timeInMS: number) {
                 const timeString: string = new Date(timeInMS).toISOString().substr(11, 8);
                 this.onClockTick.notifyObservers(timeString);
             }
@@ -342,7 +353,12 @@ class Playground {
             private cubes: Array<BABYLON.Mesh> = [];
             private moves: number = 0;
         }
+
         const rubiksCube = new RubiksCube();
+
+        /**
+         * Create GUI
+         */
 
         const gameOverText: BABYLON.GUI.TextBlock = new BABYLON.GUI.TextBlock('', 'You solved it!');
         gameOverText.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
@@ -443,7 +459,7 @@ class Playground {
 
             private static DEFAULT_SCALAR: number = 0.9;
             private container: BABYLON.GUI.Container;
-            private iconImage: BABYLON.GUI.Container;
+            private iconImage: BABYLON.GUI.Image;
         }
 
         const twitterIcon: SocialMediaIcon = new SocialMediaIcon('icons/twitter.svg', 'https://twitter.com/blindinghues');
@@ -460,7 +476,6 @@ class Playground {
 
 
         rubiksCube.initEvents();
-
 
         return scene;
     }
