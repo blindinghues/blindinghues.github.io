@@ -28,9 +28,7 @@ class Playground {
             return arr[Math.floor(arr.length * Math.random())];
         }
         class RotationAxis {
-            constructor(component) {
-                this.component = component;
-            }
+            constructor(component) { this.component = component; }
             getComponent() { return this.component; }
         }
         RotationAxis.Pitch = new RotationAxis('x');
@@ -354,7 +352,7 @@ class Playground {
         gameOverText.shadowOffsetY = 5;
         gameOverText.resizeToFit = true;
         gameOverText.zIndex = 1;
-        gui.addControl(gameOverText);
+        gameContainer.addControl(gameOverText);
         onRubiksCreate.add((rubiksCube) => rubiksCube.onGameEnd.add(() => gameOverText.isVisible = true));
         onRubiksCreate.add((rubiksCube) => rubiksCube.onCreate.add(() => gameOverText.isVisible = false));
         const resetButton = BABYLON.GUI.Button.CreateSimpleButton("shuffleButton", "NEW GAME");
