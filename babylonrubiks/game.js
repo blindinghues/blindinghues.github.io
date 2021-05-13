@@ -230,8 +230,8 @@ class Playground {
                 const layerOptions = new Array(this.width).fill(null).map((x, idx) => idx);
                 let movementCount = this.shuffleCount;
                 this.randomRotationUpdateHandle = setInterval(() => {
-                    rubiksCube.rotate(getRandomElementFromArray(axisOptions), getRandomElementFromArray(layerOptions), getRandomElementFromArray(ccwOptions), 2);
-                    if (--movementCount == 0) {
+                    const rotated = rubiksCube.rotate(getRandomElementFromArray(axisOptions), getRandomElementFromArray(layerOptions), getRandomElementFromArray(ccwOptions), 2);
+                    if (rotated && --movementCount == 0) {
                         clearInterval(this.randomRotationUpdateHandle);
                         this.randomRotationUpdateHandle = null;
                         this.enabled = true;
