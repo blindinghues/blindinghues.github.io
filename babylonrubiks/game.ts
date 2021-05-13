@@ -338,10 +338,8 @@ class Playground {
             public isSolved(): boolean {
                 let valid: boolean = true;
                 this.materialToSidePlanes.forEach((planes, material) => {
-                    const cubePositions = planes.map(plane => this.sidePlaneToCubeMesh.get(plane).position);
-                    valid = valid && (cubePositions.every(cubePos => cubePos.x == cubePositions[0].x) ||
-                        cubePositions.every(cubePos => cubePos.y == cubePositions[0].y) || 
-                        cubePositions.every(cubePos => cubePos.z == cubePositions[0].z));
+                    const cubesRotations = planes.map(plane => this.sidePlaneToCubeMesh.get(plane).rotation);
+                    valid = valid && cubesRotations.every(rotation => rotation.equals(cubesRotations[0]));
                 });
                 return valid;
             }
