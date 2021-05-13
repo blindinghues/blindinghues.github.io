@@ -425,15 +425,16 @@ class Playground {
                 return textBlock;
             };
             const gameOverText: BABYLON.GUI.TextBlock = new BABYLON.GUI.TextBlock('', 'You solved it!');
-            gameOverText.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
-            gameOverText.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
             gameOverText.color = 'white';
             gameOverText.fontSizeInPixels = 130;
             gameOverText.isVisible = false;
             gameOverText.shadowOffsetX = 5;
             gameOverText.shadowOffsetY = 5;
+            gameOverText.resizeToFit = true;
+            gameOverText.zIndex = 1;
             gui.addControl(gameOverText);
             onRubiksCreate.add((rubiksCube) => rubiksCube.onGameEnd.add(() => gameOverText.isVisible = true));
+            onRubiksCreate.add((rubiksCube) => rubiksCube.onCreate.add(() => gameOverText.isVisible = false));
             const resetButton = BABYLON.GUI.Button.CreateSimpleButton("shuffleButton", "NEW GAME");
             resetButton.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
             resetButton.width = '350px';
@@ -496,6 +497,7 @@ class Playground {
         {
             optionsContainer.isPointerBlocker = true;
             optionsContainer.isVisible = false;
+            optionsContainer.zIndex = 999;
             gui.addControl(optionsContainer);
                 const optionsPanel: BABYLON.GUI.Container = new BABYLON.GUI.Container('');
                 optionsPanel.background = 'rgba(0, 0, 0, 0.8)';
