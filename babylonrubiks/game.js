@@ -6,6 +6,10 @@ class Playground {
         const camera = new BABYLON.ArcRotateCamera("Camera", 0, Math.PI / 2, 10, new BABYLON.Vector3(0, 0, 0), scene);
         camera.lowerRadiusLimit = 5;
         camera.upperRadiusLimit = 30;
+        camera.upperAlphaLimit = null;
+        camera.lowerAlphaLimit = null;
+        camera.upperBetaLimit = null;
+        camera.lowerBetaLimit = null;
         camera.panningSensibility = 0;
         camera.wheelPrecision = 500;
         camera.attachControl(canvas, true);
