@@ -1,29 +1,29 @@
 class Playground {
     public static CreateScene(engine: BABYLON.Engine, canvas: HTMLCanvasElement): BABYLON.Scene {
-        // This creates a basic Babylon Scene object (non-mesh)
-        var scene = new BABYLON.Scene(engine);
-
+        const scene = new BABYLON.Scene(engine);
         scene.ambientColor = new BABYLON.Color3(1.0, 1.0, 1.0);
-
         scene.clearColor = new BABYLON.Color4(0.3, 0.3, 0.3, 1.0);
 
-        // This creates and positions a free camera (non-mesh)
-        var camera = new BABYLON.ArcRotateCamera("Camera", 0, Math.PI / 2, 10, new BABYLON.Vector3(0, 0, 0), scene);
+        const camera = new BABYLON.ArcRotateCamera("Camera", 0, Math.PI / 2, 10, new BABYLON.Vector3(0, 0, 0), scene);
         camera.lowerRadiusLimit = 5;
-        camera.upperRadiusLimit = 15;
+        camera.upperRadiusLimit = 30;
         camera.panningSensibility = 0;
         camera.wheelPrecision = 500;
-        // This targets the camera to scene origin
-        camera.setTarget(BABYLON.Vector3.Zero());
-
-        // This attaches the camera to the canvas
         camera.attachControl(canvas, true);
 
-        // This creates a light, aiming 0,1,0 - to the sky (non-mesh)
-        var light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
-
-        // Default intensity is 1. Let's dim the light a small amount
+        const light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
         light.intensity = 0.7;
+
+        const radialPlaneBackground: BABYLON.Mesh = BABYLON.MeshBuilder.CreatePlane('', { size: 50 }, scene);
+        radialPlaneBackground.position.z = 20;
+        radialPlaneBackground.parent = camera;
+        radialPlaneBackground.isPickable = false;
+        const radialPlaneMaterial: BABYLON.StandardMaterial = new BABYLON.StandardMaterial('', scene);
+        radialPlaneMaterial.ambientColor = new BABYLON.Color3(1, 1, 1);
+        radialPlaneMaterial.disableLighting = true;
+        radialPlaneMaterial.diffuseTexture = new BABYLON.Texture('textures/radialblue.png', scene);
+        radialPlaneBackground.material = radialPlaneMaterial;
+
 
         // Create GUI
         const gui = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI('');
@@ -35,9 +35,7 @@ class Playground {
         }
 
         class RotationAxis {
-            public constructor(component: string) {
-                this.component = component;
-            }
+            public constructor(component: string) { this.component = component; }
             public getComponent(): string { return this.component; }
             public static Pitch = new RotationAxis('x');
             public static Yaw = new RotationAxis('y');
@@ -45,95 +43,128 @@ class Playground {
             private component: string;
         }
 
+        interface RubiksCreationOptions {
+            width: number;
+            shuffleCount: number;
+        }
         class RubiksCube {
-            public constructor() {
+            public constructor(creationOptions: RubiksCreationOptions) {
+                this.width = creationOptions.width;
+                this.shuffleCount = creationOptions.shuffleCount;
                 this.transformNode = new BABYLON.TransformNode('', scene);
                 this.createCubes();
                 this.setupDragCallbacks();
-                this.loadSounds();
+                this.enabled = false;
+            }
+
+            public dispose() {
+                this.transformNode.dispose();
+                scene.onPointerObservable.remove(this.pointerObservable);
+                if (this.timeUpdateHandle) clearInterval(this.timeUpdateHandle);
+                if (this.randomRotationUpdateHandle) clearInterval(this.randomRotationUpdateHandle);
             }
 
             public initEvents() {
+                this.onCreate.notifyObservers({
+                    width: this.width,
+                    shuffleCount: this.shuffleCount
+                });
                 this.setMoves(this.moves);
                 this.setTime(0);
             }
 
-            private loadSounds() {
-                this.gameWinSound = new BABYLON.Sound('', `sounds/ditties/gamewin.mp3`, scene, null, {
-                    loop: false, autoplay: false
+            public static loadResources(): Promise<void> {
+                return new Promise((resolve, reject) => {
+                    let remainingCount: number = 15;
+                    let onLoad = () => {
+                        if (--remainingCount == 0)
+                            resolve();
+                    }
+                    RubiksCube.WIN_SOUND = new BABYLON.Sound('', `sounds/ditties/gamewin.mp3`, scene, onLoad, {
+                        loop: false, autoplay: false
+                    });
+                    for (let i = 1; i <= 14; i++) {
+                        RubiksCube.ROTATE_SOUNDS.push(
+                            new BABYLON.Sound('', `sounds/rotations/${i}.ogg`, scene, onLoad, {
+                                loop: false, autoplay: false
+                            })
+                        )
+                    }
                 });
-                for (let i = 1; i <= 14; i++) {
-                    this.rotateSounds.push(
-                        new BABYLON.Sound('', `sounds/rotations/${i}.ogg`, scene, null, {
-                            loop: false, autoplay: false
-                        })
-                    )
-                }
             }
 
             private createCubes() {
+                // create template cube
                 const blackBoxMaterial: BABYLON.StandardMaterial = new BABYLON.StandardMaterial('', scene);
                 blackBoxMaterial.ambientColor = BABYLON.Color3.Black();
                 blackBoxMaterial.disableLighting = true;
-     
-                // create 3*3*3 cube grid
-                for (let x = -1; x <= 1; x++) {
-                    for (let z = -1; z <= 1; z++) {
-                        for (let y = -1; y <= 1; y++) {
+                const templateCube: BABYLON.Mesh = BABYLON.MeshBuilder.CreateBox('', {size: 1}, scene);
+                templateCube.material = blackBoxMaterial;
+                templateCube.isVisible = false;
+                templateCube.parent = this.transformNode;
+
+                // create cube grid
+                for (let x = 0; x < this.width; x++) {
+                    for (let z = 0; z < this.width; z++) {
+                        for (let y = 0; y < this.width; y++) {
                             // create cube at x,y,z
-                            const cube: BABYLON.Mesh = BABYLON.MeshBuilder.CreateBox('', {size: 1}, scene);
+                            const cube: BABYLON.AbstractMesh = templateCube.createInstance('');
+                            cube.isVisible = true;
                             cube.position = new BABYLON.Vector3(x, y, z);
-                            cube.material = blackBoxMaterial;
                             this.cubes.push(cube);
                             cube.parent = this.transformNode;
                         }
                     }
                 }
+                
+                // calculate center point
+                this.centerPoint = this.cubes.reduce((total: BABYLON.Vector3, cube: BABYLON.AbstractMesh) => 
+                    total.addInPlace(cube.position), BABYLON.Vector3.Zero()).scale(1/this.cubes.length);
 
                 // create plane faces
-                const sidePlaneDetails = [ 
-                    {   color: new BABYLON.Color3(255 / 255, 255 / 255, 255 / 255), material: null,
-                        rotation: new BABYLON.Vector3(Math.PI / 2, 0, 0), positionOffset: new BABYLON.Vector3(0, 1, 0)
-                    }, {color: new BABYLON.Color3(255 / 255, 213 / 255, 0 / 255), material: null,
-                        rotation: new BABYLON.Vector3(-Math.PI / 2, 0, 0), positionOffset: new BABYLON.Vector3(0, -1, 0)
-                    }, {color: new BABYLON.Color3(0 / 255, 70 / 255, 173 / 255), material: null,
-                        rotation: new BABYLON.Vector3(0, -Math.PI / 2, 0), positionOffset: new BABYLON.Vector3(1, 0, 0)
-                    }, {color: new BABYLON.Color3(0 / 255, 155 / 255, 72 / 255), material: null,
-                        rotation: new BABYLON.Vector3(0, Math.PI / 2, 0), positionOffset: new BABYLON.Vector3(-1, 0, 0)
-                    }, {color: new BABYLON.Color3(255 / 255, 88 / 255, 0 / 255), material: null,
-                        rotation: new BABYLON.Vector3(Math.PI, 0, 0), positionOffset: new BABYLON.Vector3(0, 0, 1)
-                    }, {color: new BABYLON.Color3(183 / 255, 18 / 255, 52 / 255), material: null,
-                        rotation: new BABYLON.Vector3(0, 0, 0), positionOffset: new BABYLON.Vector3(0, 0, -1)
+                [ 
+                    {   color: new BABYLON.Color3(255 / 255, 255 / 255, 255 / 255),
+                        rotation: new BABYLON.Vector3(Math.PI / 2, 0, 0), normal: new BABYLON.Vector3(0, 1, 0)
+                    }, {color: new BABYLON.Color3(255 / 255, 213 / 255, 0 / 255),
+                        rotation: new BABYLON.Vector3(-Math.PI / 2, 0, 0), normal: new BABYLON.Vector3(0, -1, 0)
+                    }, {color: new BABYLON.Color3(0 / 255, 70 / 255, 173 / 255),
+                        rotation: new BABYLON.Vector3(0, -Math.PI / 2, 0), normal: new BABYLON.Vector3(1, 0, 0)
+                    }, {color: new BABYLON.Color3(0 / 255, 155 / 255, 72 / 255),
+                        rotation: new BABYLON.Vector3(0, Math.PI / 2, 0), normal: new BABYLON.Vector3(-1, 0, 0)
+                    }, {color: new BABYLON.Color3(255 / 255, 88 / 255, 0 / 255),
+                        rotation: new BABYLON.Vector3(Math.PI, 0, 0), normal: new BABYLON.Vector3(0, 0, 1)
+                    }, {color: new BABYLON.Color3(183 / 255, 18 / 255, 52 / 255),
+                        rotation: new BABYLON.Vector3(0, 0, 0), normal: new BABYLON.Vector3(0, 0, -1)
                     }
-                ].map(planeDetails => {
+                ].forEach(planeDetails => {
                     const material: BABYLON.StandardMaterial = new BABYLON.StandardMaterial('', scene);
                     material.ambientColor = planeDetails.color;
                     material.disableLighting = true;
-                    planeDetails.material = material;
-                    return planeDetails;
-                });
-
-                sidePlaneDetails.forEach(planeDetails => {
+                    this.materialToSidePlanes.set(material, []);
+                    const templatePlane: BABYLON.Mesh = BABYLON.MeshBuilder.CreatePlane('', {size: 0.96}, scene);
+                    templatePlane.material = material;
+                    templatePlane.parent = this.transformNode;
+                    templatePlane.isVisible = false;
                     this.cubes
-                        .filter(cube => cube.position.asArray().some((val, idx) => val != 0 && val == planeDetails.positionOffset.asArray()[idx]))
+                        .filter(cube => !this.cubes.some(ocube => ocube.position.equals(cube.position.add(planeDetails.normal))))
                         .forEach(cube => {
-                            const planeMesh: BABYLON.Mesh = BABYLON.MeshBuilder.CreatePlane('', {size: 0.96}, scene);
+                            const planeMesh: BABYLON.AbstractMesh = templatePlane.createInstance('');
+                            planeMesh.isVisible = true;
                             planeMesh.isPickable = true;
                             planeMesh.parent = cube;
-                            planeMesh.material = planeDetails.material;
-                            planeMesh.position = planeDetails.positionOffset.scale(0.5001).clone();
+                            planeMesh.position = planeDetails.normal.scale(0.5001).clone();
                             planeMesh.rotation = planeDetails.rotation.clone();
                             this.sidePlaneToCubeMesh.set(planeMesh, cube);
-                            if (!this.materialToSidePlanes.has(planeDetails.material))
-                                this.materialToSidePlanes.set(planeDetails.material, []);
-                            this.materialToSidePlanes.get(planeDetails.material).push(planeMesh);
+                            this.materialToSidePlanes.get(material).push(planeMesh);
                         });
                 });
+
+                camera.setTarget(this.centerPoint);
             }
 
             private setupDragCallbacks() {
                 let firstPick: BABYLON.AbstractMesh = null;
-                scene.onPointerObservable.add(eventData => {
+                this.pointerObservable = scene.onPointerObservable.add(eventData => {
                     if (!this.enabled)
                         return;
                     switch(eventData.type) {
@@ -195,7 +226,9 @@ class Playground {
                 });
             }
 
-            public shuffle(onFinished?: () => void) {
+            public shuffle() {
+                if (this.shuffleCount <= 0)
+                    return;
                 this.setMoves(0);
                 if (this.timeUpdateHandle) {
                     clearInterval(this.timeUpdateHandle);
@@ -205,26 +238,24 @@ class Playground {
                 this.shuffling = true;
                 const axisOptions: Array<RotationAxis> = [RotationAxis.Yaw, RotationAxis.Pitch, RotationAxis.Roll];
                 const ccwOptions: Array<boolean> = [true, false];
-                const layerOptions: Array<number> = [-1, 0, 1];
-                let movementCount: number = 100;
-                const randomRotationInterval = setInterval(() => {
+                const layerOptions: Array<number> = new Array(this.width).fill(null).map((x, idx) => idx);
+                let movementCount: number = this.shuffleCount;
+                this.randomRotationUpdateHandle = setInterval(() => {
                     rubiksCube.rotate(
                         getRandomElementFromArray(axisOptions),
                         getRandomElementFromArray(layerOptions),
                         getRandomElementFromArray(ccwOptions),
-                        4
+                        2
                     );
                     if (--movementCount == 0) {
-                        clearInterval(randomRotationInterval);
+                        clearInterval(this.randomRotationUpdateHandle);
+                        this.randomRotationUpdateHandle = null;
                         this.enabled = true;
                         this.shuffling = false;
                         this.startTime = new Date();
                         this.timeUpdateHandle = setInterval(() => {
                             this.setTime((new Date()).getTime() - this.startTime.getTime());
                         }, 32);
-                        if (onFinished)
-                            onFinished();
-                        return;
                     }
                 }, 50);
             }
@@ -236,11 +267,11 @@ class Playground {
             public getTransformNode(): BABYLON.TransformNode { return this.transformNode; }
 
             public rotate(axis: RotationAxis, layer: number, ccw: boolean, speedModifier? : number): boolean {
-                console.assert(layer == -1 || layer == 0 || layer == 1);
+                console.assert(layer >= 0 && layer < this.width);
                 speedModifier = speedModifier === undefined ? 1: speedModifier;
 
                 // determine cubes to rotate
-                const cubesToRotate: Array<BABYLON.Mesh> = this.cubes
+                const cubesToRotate: Array<BABYLON.AbstractMesh> = this.cubes
                 .filter((cube) => !this.animatingCubes.has(cube))
                 .filter((cube) => {
                     const relativeCubePos: BABYLON.Vector3 = cube.position;
@@ -252,7 +283,7 @@ class Playground {
                 });
                 
                 // if we can't rotate all the cubes in the layer, don't allow the rotation to occur
-                if (cubesToRotate.length != 9)
+                if (cubesToRotate.length != Math.pow(this.width, 2))
                     return false;
 
                 cubesToRotate.forEach(cube => this.animatingCubes.add(cube));
@@ -265,13 +296,15 @@ class Playground {
                     axis == RotationAxis.Yaw ? layer : 0,
                     axis == RotationAxis.Roll ? layer : 0
                 );
+                transformNode.position.addInPlace(this.centerPoint);
+
                 transformNode.parent = this.transformNode;
                 cubesToRotate.forEach(cube => cube.setParent(transformNode));
                 const animation = BABYLON.Animation.CreateAndStartAnimation('', transformNode, `rotation.${axis.getComponent()}`,
                     60, 15 / speedModifier, 0, rotationInRadians, 0);
 
                 // play rotating sound effect
-                getRandomElementFromArray(this.rotateSounds).play();
+                getRandomElementFromArray(RubiksCube.ROTATE_SOUNDS).play();
 
                 // when the animation is finished...
                 animation.onAnimationEnd = () => {
@@ -299,7 +332,6 @@ class Playground {
                 };
                 
                 this.setMoves(this.moves + 1);
-
                 return true;
             }
 
@@ -317,8 +349,9 @@ class Playground {
             private endGame() {
                 this.enabled = false;
                 clearInterval(this.timeUpdateHandle);
+                this.timeUpdateHandle = null;
                 this.onGameEnd.notifyObservers();
-                this.gameWinSound.play();
+                RubiksCube.WIN_SOUND.play();
             }
 
             private setMoves(moves: number) {
@@ -335,9 +368,14 @@ class Playground {
             public onMoveMade: BABYLON.Observable<number> = new BABYLON.Observable();
             public onClockTick: BABYLON.Observable<string> = new BABYLON.Observable();
             public onGameEnd: BABYLON.Observable<void> = new BABYLON.Observable();
+            public onCreate: BABYLON.Observable<RubiksCreationOptions> = new BABYLON.Observable();
 
-            private rotateSounds: Array<BABYLON.Sound> = [];
-            private gameWinSound: BABYLON.Sound;
+            private width: number;
+            private shuffleCount: number;
+            private centerPoint: BABYLON.Vector3;
+
+            private static ROTATE_SOUNDS: Array<BABYLON.Sound> = [];
+            private static WIN_SOUND: BABYLON.Sound;
 
             private materialToSidePlanes: Map<BABYLON.Material, Array<BABYLON.AbstractMesh>> = new Map();
             private sidePlaneToCubeMesh: Map<BABYLON.AbstractMesh, BABYLON.AbstractMesh> = new Map();
@@ -347,96 +385,215 @@ class Playground {
             private shuffling: boolean = false;
 
             private startTime: Date = null;
-            private timeUpdateHandle: any;
 
-            private animatingCubes: Set<BABYLON.Mesh> = new Set();
-            private cubes: Array<BABYLON.Mesh> = [];
+            private timeUpdateHandle: any;
+            private randomRotationUpdateHandle: any;
+
+            private animatingCubes: Set<BABYLON.AbstractMesh> = new Set();
+            private cubes: Array<BABYLON.AbstractMesh> = [];
             private moves: number = 0;
+
+            private pointerObservable: BABYLON.Observer<BABYLON.PointerInfo>;
         }
 
-        const rubiksCube = new RubiksCube();
+        // load rubiks resources
+        RubiksCube.loadResources().then(() => {
+            gameContainer.isVisible = true;
+        });
+
+        // create rubiks cube
+        let rubiksCube = new RubiksCube({width: 3, shuffleCount: 0});
+        const onRubiksCreate: BABYLON.Observable<RubiksCube> = new BABYLON.Observable();
 
         /**
-         * Create GUI
+         * GUI
          */
 
-        const gameOverText: BABYLON.GUI.TextBlock = new BABYLON.GUI.TextBlock('', 'You solved it!');
-        gameOverText.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
-        gameOverText.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
-        gameOverText.color = 'white';
-        gameOverText.fontSizeInPixels = 130;
-        gameOverText.isVisible = false;
-        gameOverText.shadowOffsetX = 5;
-        gameOverText.shadowOffsetY = 5;
-        gui.addControl(gameOverText);
-        rubiksCube.onGameEnd.add(() => gameOverText.isVisible = true);
-
-        const shuffleButton = BABYLON.GUI.Button.CreateSimpleButton("shuffleButton", "Shuffle/Reset");
-        shuffleButton.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
-        shuffleButton.width = '400px';
-        shuffleButton.height = '100px';
-        shuffleButton.background = 'grey';
-        shuffleButton.fontSizeInPixels = 40;
-        shuffleButton.color = 'white';
-        shuffleButton.onPointerClickObservable.add(() => {
+        // Game container
+        const gameContainer: BABYLON.GUI.Container = new BABYLON.GUI.Container('');
+        gameContainer.isVisible = false;
+        gui.addControl(gameContainer);
+            const createStatTextBlock: (string?) => BABYLON.GUI.TextBlock = (name?: string) => {
+                const textBlock: BABYLON.GUI.TextBlock = new BABYLON.GUI.TextBlock(name === undefined ? '' : name);
+                textBlock.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+                textBlock.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
+                textBlock.resizeToFit = true;
+                textBlock.top = '100px';
+                textBlock.color = 'white';
+                textBlock.fontSizeInPixels = 50;
+                textBlock.paddingLeft = '20px';
+                return textBlock;
+            };
+            const gameOverText: BABYLON.GUI.TextBlock = new BABYLON.GUI.TextBlock('', 'You solved it!');
+            gameOverText.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
+            gameOverText.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+            gameOverText.color = 'white';
+            gameOverText.fontSizeInPixels = 130;
             gameOverText.isVisible = false;
-            shuffleButton.isVisible = false;
-            rubiksCube.shuffle(() => shuffleButton.isVisible = true);
-        });
-        gui.addControl(shuffleButton);
+            gameOverText.shadowOffsetX = 5;
+            gameOverText.shadowOffsetY = 5;
+            gui.addControl(gameOverText);
+            onRubiksCreate.add((rubiksCube) => rubiksCube.onGameEnd.add(() => gameOverText.isVisible = true));
+            const resetButton = BABYLON.GUI.Button.CreateSimpleButton("shuffleButton", "NEW GAME");
+            resetButton.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
+            resetButton.width = '350px';
+            resetButton.height = '100px';
+            resetButton.background = 'grey';
+            resetButton.fontSizeInPixels = 40;
+            resetButton.color = 'white';
+            resetButton.onPointerClickObservable.add(() => {
+                gameContainer.isVisible = false;
+                optionsContainer.isVisible = true;
+            });
+            gameContainer.addControl(resetButton);
+            const bottomText: BABYLON.GUI.TextBlock = new BABYLON.GUI.TextBlock('');
+            bottomText.resizeToFit = true;
+            bottomText.text = 'Rotate segments by dragging across the tiles';
+            bottomText.top = "100px";
+            bottomText.fontSize = '40px';
+            bottomText.color = 'white';
+            bottomText.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
+            gameContainer.addControl(bottomText);
+            const statsPanel: BABYLON.GUI.Container = new BABYLON.GUI.Container('');
+            statsPanel.background = 'rgba(0, 0, 0, 0.8)';
+            statsPanel.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
+            statsPanel.width = '300px';
+            statsPanel.height = '800px';
+            statsPanel.left = '-20px';
+            gameContainer.addControl(statsPanel);
+                const movesLabelText: BABYLON.GUI.TextBlock = createStatTextBlock();
+                movesLabelText.top = '100px';
+                movesLabelText.text = 'MOVES:';
+                statsPanel.addControl(movesLabelText);
+                const movesLabelValue: BABYLON.GUI.TextBlock = createStatTextBlock('txtMovesValue');
+                movesLabelValue.top = '150px';
+                movesLabelValue.text = '';
+                onRubiksCreate.add((rubiksCube) => rubiksCube.onMoveMade.add((moveCount) => movesLabelValue.text = moveCount + ''));
+                statsPanel.addControl(movesLabelValue);
+                const timeLabelText: BABYLON.GUI.TextBlock = createStatTextBlock();
+                timeLabelText.top = '300px';
+                timeLabelText.text = 'TIMER:';
+                statsPanel.addControl(timeLabelText);
+                const timeValueText: BABYLON.GUI.TextBlock = createStatTextBlock('txtTimerValue');
+                timeValueText.top = '350px';
+                timeValueText.text = '';
+                statsPanel.addControl(timeValueText);
+                onRubiksCreate.add((rubiksCube) => rubiksCube.onClockTick.add((timeStr) => timeValueText.text = timeStr));
+                const cubeWidthLabelText: BABYLON.GUI.TextBlock = createStatTextBlock();
+                cubeWidthLabelText.top = '500px';
+                cubeWidthLabelText.text = 'WIDTH:';
+                statsPanel.addControl(cubeWidthLabelText);
+                const cubeWidthValueText: BABYLON.GUI.TextBlock = createStatTextBlock();
+                cubeWidthValueText.top = '550px';
+                cubeWidthValueText.text = ':';
+                statsPanel.addControl(cubeWidthValueText);
+                onRubiksCreate.add((rubiksCube) => 
+                    rubiksCube.onCreate.add(creationOptions => cubeWidthValueText.text = creationOptions.width + "")
+                );
 
-        const statsPanel: BABYLON.GUI.Container = new BABYLON.GUI.Container('');
-        statsPanel.background = 'rgba(0, 0, 0, 0.5)';
-        statsPanel.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
-        statsPanel.width = '300px';
-        statsPanel.height = '800px';
-        statsPanel.left = '-20px';
-        gui.addControl(statsPanel);
+        // Options container
+        const optionsContainer: BABYLON.GUI.Container = new BABYLON.GUI.Container('');
+        {
+            optionsContainer.isPointerBlocker = true;
+            optionsContainer.isVisible = false;
+            gui.addControl(optionsContainer);
+                const optionsPanel: BABYLON.GUI.Container = new BABYLON.GUI.Container('');
+                optionsPanel.background = 'rgba(0, 0, 0, 0.8)';
+                optionsPanel.width = '500px';
+                optionsPanel.height = '500px';
+                optionsContainer.addControl(optionsPanel);
+                    const topText = createStatTextBlock('');
+                    topText.text = 'NEW GAME';
+                    topText.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
+                    topText.top = '30px';
+                    optionsPanel.addControl(topText);
+                    const sliderWidthValueText = createStatTextBlock('');
+                    sliderWidthValueText.fontSize = '30px';
+                    sliderWidthValueText.top = '160px';
+                    optionsPanel.addControl(sliderWidthValueText);
+                    const cubeWidthSlider = new BABYLON.GUI.Slider();
+                    cubeWidthSlider.step = 1;
+                    cubeWidthSlider.minimum = 2;
+                    cubeWidthSlider.maximum = 7;
+                    cubeWidthSlider.value = 7;
+                    cubeWidthSlider.height = "20px";
+                    cubeWidthSlider.width = "100%";
+                    cubeWidthSlider.top = '200px';
+                    cubeWidthSlider.color = 'white';
+                    cubeWidthSlider.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
+                    cubeWidthSlider.onValueChangedObservable.add(() => sliderWidthValueText.text = `CUBE WIDTH: ${cubeWidthSlider.value}`);
+                    onRubiksCreate.add(rubiksCube => 
+                        rubiksCube.onCreate.add((options) => cubeWidthSlider.value = options.width)
+                    );
+                    optionsPanel.addControl(cubeWidthSlider);
 
-        const bottomText: BABYLON.GUI.TextBlock = new BABYLON.GUI.TextBlock('');
-        bottomText.resizeToFit = true;
-        bottomText.text = 'Rotate segments by dragging across the tiles';
-        bottomText.top = "-140px";
-        bottomText.fontSize = '40px';
-        bottomText.color = 'white';
-        bottomText.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
-        gui.addControl(bottomText);
-      
-        const createStatTextBlock: (string?) => BABYLON.GUI.TextBlock = (name?: string) => {
-            const textBlock: BABYLON.GUI.TextBlock = new BABYLON.GUI.TextBlock(name === undefined ? '' : name);
-            textBlock.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
-            textBlock.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
-            textBlock.resizeToFit = true;
-            textBlock.top = '100px';
-            textBlock.color = 'white';
-            textBlock.fontSizeInPixels = 50;
-            statsPanel.addControl(textBlock);
-            textBlock.paddingLeft = '20px';
-            return textBlock;
-        };
+                    const sliderShufflesValueText = createStatTextBlock('');
+                    sliderShufflesValueText.fontSize = '30px';
+                    sliderShufflesValueText.top = '260px';
+                    optionsPanel.addControl(sliderShufflesValueText);
+                    const cubeShufflesSlider = new BABYLON.GUI.Slider();
+                    cubeShufflesSlider.step = 1;
+                    cubeShufflesSlider.minimum = 1;
+                    cubeShufflesSlider.maximum = 100;
+                    cubeShufflesSlider.value = 7;
+                    cubeShufflesSlider.height = "20px";
+                    cubeShufflesSlider.width = "100%";
+                    cubeShufflesSlider.top = '300px';
+                    cubeShufflesSlider.color = 'white';
+                    cubeShufflesSlider.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
+                    cubeShufflesSlider.onValueChangedObservable.add(() => sliderShufflesValueText.text = `SHUFFLE COUNT: ${cubeShufflesSlider.value}`);
+                    onRubiksCreate.add(rubiksCube => 
+                        rubiksCube.onCreate.add((options) => cubeShufflesSlider.value = (options.shuffleCount == 0 ? 50 : options.shuffleCount))
+                    );
+                    optionsPanel.addControl(cubeShufflesSlider);
+                    
+                    const backButton = BABYLON.GUI.Button.CreateSimpleButton('', "BACK");
+                    backButton.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
+                    backButton.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
+                    backButton.left = '-130px';
+                    backButton.top = '-18px';
+                    backButton.width = '200px';
+                    backButton.height = '80px';
+                    backButton.background = 'grey';
+                    backButton.fontSizeInPixels = 40;
+                    backButton.color = 'white';
+                    backButton.onPointerClickObservable.add(() => {
+                        optionsContainer.isVisible = false;
+                        gameContainer.isVisible = true;
+                    });
+                    optionsPanel.addControl(backButton);
+                    const createButton = BABYLON.GUI.Button.CreateSimpleButton('', "CREATE");
+                    createButton.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
+                    createButton.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
+                    createButton.left = '130px';
+                    createButton.top = '-18px';
+                    createButton.width = '200px';
+                    createButton.height = '80px';
+                    createButton.background = 'grey';
+                    createButton.fontSizeInPixels = 40;
+                    createButton.color = 'white';
+                    createButton.onPointerClickObservable.add(() => {
+                        optionsContainer.isVisible = false;
+                        gameContainer.isVisible = true;
+                        rubiksCube.dispose();
+                        rubiksCube = new RubiksCube({
+                            width: cubeWidthSlider.value,
+                            shuffleCount: cubeShufflesSlider.value
+                        });
+                        onRubiksCreate.notifyObservers(rubiksCube);
+                        rubiksCube.initEvents();
+                        rubiksCube.shuffle();
+                    });
+                    optionsPanel.addControl(createButton);
+        }
 
-        const movesLabelText: BABYLON.GUI.TextBlock = createStatTextBlock();
-        movesLabelText.top = '100px';
-        movesLabelText.text = 'MOVES:';
-        const movesLabelValue: BABYLON.GUI.TextBlock = createStatTextBlock('txtMovesValue');
-        movesLabelValue.top = '150px';
-        movesLabelValue.text = '';
-        rubiksCube.onMoveMade.add((moveCount) => movesLabelValue.text = moveCount + '');
-
-        const timeLabelText: BABYLON.GUI.TextBlock = createStatTextBlock();
-        timeLabelText.top = '300px';
-        timeLabelText.text = 'TIMER:';
-        const timeValueText: BABYLON.GUI.TextBlock = createStatTextBlock('txtTimerValue');
-        timeValueText.top = '350px';
-        timeValueText.text = '';
-        rubiksCube.onClockTick.add((timeStr) => timeValueText.text = timeStr);
-
+        // Social media icons
         class SocialMediaIcon {
             public constructor(imageUrl: string, linkUrl: string) {
                 const iconContainer: BABYLON.GUI.Container = new BABYLON.GUI.Container('');
                 iconContainer.hoverCursor = "pointer";
                 iconContainer.isPointerBlocker = true;
-                gui.addControl(iconContainer);
+                gameContainer.addControl(iconContainer);
                 this.container = iconContainer;
                 const iconImage: BABYLON.GUI.Image = new BABYLON.GUI.Image('', imageUrl);
                 iconImage.width = SocialMediaIcon.DEFAULT_SCALAR; iconImage.height = SocialMediaIcon.DEFAULT_SCALAR;
@@ -475,8 +632,8 @@ class Playground {
         githubIcon.getContainer().horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
 
 
+        onRubiksCreate.notifyObservers(rubiksCube);
         rubiksCube.initEvents();
-
         return scene;
     }
 }
