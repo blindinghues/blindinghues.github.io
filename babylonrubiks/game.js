@@ -32,7 +32,9 @@ class Playground {
             return arr[Math.floor(arr.length * Math.random())];
         }
         class RotationAxis {
-            constructor(component) { this.component = component; }
+            constructor(component) {
+                this.component = component;
+            }
             getComponent() { return this.component; }
         }
         RotationAxis.Pitch = new RotationAxis('x');
@@ -372,44 +374,58 @@ class Playground {
         const bottomText = new BABYLON.GUI.TextBlock('');
         bottomText.resizeToFit = true;
         bottomText.text = 'Rotate segments by dragging across the tiles';
-        bottomText.top = "100px";
+        bottomText.top = "150px";
         bottomText.fontSize = '40px';
         bottomText.color = 'white';
         bottomText.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
         gameContainer.addControl(bottomText);
+        onRubiksCreate.add((rubiksCube) => rubiksCube.onMoveMade.add((count) => { if (count != 0)
+            bottomText.isVisible = false; }));
         const statsPanel = new BABYLON.GUI.Container('');
         statsPanel.background = 'rgba(0, 0, 0, 0.8)';
-        statsPanel.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
-        statsPanel.width = '300px';
-        statsPanel.height = '800px';
-        statsPanel.left = '-20px';
+        statsPanel.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
+        statsPanel.width = '700px';
+        statsPanel.height = '110px';
+        statsPanel.top = '20px';
         gameContainer.addControl(statsPanel);
+        const movesSection = new BABYLON.GUI.Container('');
+        movesSection.width = '233px';
+        movesSection.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+        statsPanel.addControl(movesSection);
         const movesLabelText = createStatTextBlock();
-        movesLabelText.top = '100px';
+        movesLabelText.top = '0x';
         movesLabelText.text = 'MOVES:';
-        statsPanel.addControl(movesLabelText);
+        movesSection.addControl(movesLabelText);
         const movesLabelValue = createStatTextBlock('txtMovesValue');
-        movesLabelValue.top = '150px';
+        movesLabelValue.top = '50px';
         movesLabelValue.text = '';
         onRubiksCreate.add((rubiksCube) => rubiksCube.onMoveMade.add((moveCount) => movesLabelValue.text = moveCount + ''));
-        statsPanel.addControl(movesLabelValue);
+        movesSection.addControl(movesLabelValue);
+        const timeSection = new BABYLON.GUI.Container('');
+        timeSection.width = '233px';
+        timeSection.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
+        statsPanel.addControl(timeSection);
         const timeLabelText = createStatTextBlock();
-        timeLabelText.top = '300px';
+        timeLabelText.top = '0px';
         timeLabelText.text = 'TIMER:';
-        statsPanel.addControl(timeLabelText);
+        timeSection.addControl(timeLabelText);
         const timeValueText = createStatTextBlock('txtTimerValue');
-        timeValueText.top = '350px';
+        timeValueText.top = '50px';
         timeValueText.text = '';
-        statsPanel.addControl(timeValueText);
+        timeSection.addControl(timeValueText);
         onRubiksCreate.add((rubiksCube) => rubiksCube.onClockTick.add((timeStr) => timeValueText.text = timeStr));
+        const widthSection = new BABYLON.GUI.Container('');
+        widthSection.width = '233px';
+        widthSection.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
+        statsPanel.addControl(widthSection);
         const cubeWidthLabelText = createStatTextBlock();
-        cubeWidthLabelText.top = '500px';
+        cubeWidthLabelText.top = '0px';
         cubeWidthLabelText.text = 'WIDTH:';
-        statsPanel.addControl(cubeWidthLabelText);
+        widthSection.addControl(cubeWidthLabelText);
         const cubeWidthValueText = createStatTextBlock();
-        cubeWidthValueText.top = '550px';
+        cubeWidthValueText.top = '50px';
         cubeWidthValueText.text = ':';
-        statsPanel.addControl(cubeWidthValueText);
+        widthSection.addControl(cubeWidthValueText);
         onRubiksCreate.add((rubiksCube) => rubiksCube.onCreate.add(creationOptions => cubeWidthValueText.text = creationOptions.width + ""));
         // Options container
         const optionsContainer = new BABYLON.GUI.Container('');
