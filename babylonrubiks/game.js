@@ -33,9 +33,7 @@ class Playground {
             return arr[Math.floor(arr.length * Math.random())];
         }
         class RotationAxis {
-            constructor(component) {
-                this.component = component;
-            }
+            constructor(component) { this.component = component; }
             getComponent() { return this.component; }
         }
         RotationAxis.Pitch = new RotationAxis('x');
@@ -335,17 +333,6 @@ class Playground {
                 // Game container
                 const gameContainer = new BABYLON.GUI.Container('');
                 gui.addControl(gameContainer);
-                const createStatTextBlock = (name) => {
-                    const textBlock = new BABYLON.GUI.TextBlock(name === undefined ? '' : name);
-                    textBlock.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
-                    textBlock.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
-                    textBlock.resizeToFit = true;
-                    textBlock.top = '100px';
-                    textBlock.color = 'white';
-                    textBlock.fontSizeInPixels = 50;
-                    textBlock.paddingLeft = '20px';
-                    return textBlock;
-                };
                 const gameOverText = new BABYLON.GUI.TextBlock('', 'You solved it!');
                 gameOverText.color = 'white';
                 gameOverText.fontSizeInPixels = 130;
@@ -372,7 +359,7 @@ class Playground {
                 gameContainer.addControl(resetButton);
                 const bottomText = new BABYLON.GUI.TextBlock('');
                 bottomText.resizeToFit = true;
-                bottomText.text = 'Rotate segments by dragging across the tiles';
+                bottomText.text = 'Drag across tiles to move';
                 bottomText.top = "150px";
                 bottomText.fontSize = '40px';
                 bottomText.color = 'white';
@@ -383,46 +370,52 @@ class Playground {
                 const statsPanel = new BABYLON.GUI.Container('');
                 statsPanel.background = 'rgba(0, 0, 0, 0.8)';
                 statsPanel.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
-                statsPanel.width = '700px';
-                statsPanel.height = '110px';
+                statsPanel.width = '600px';
+                statsPanel.height = '90px';
                 statsPanel.top = '20px';
                 gameContainer.addControl(statsPanel);
                 const movesSection = new BABYLON.GUI.Container('');
-                movesSection.width = '233px';
+                movesSection.width = '200px';
                 movesSection.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
                 statsPanel.addControl(movesSection);
-                const movesLabelText = createStatTextBlock();
-                movesLabelText.top = '0x';
+                const movesLabelText = GUI.createStandardTextBlock();
+                movesLabelText.top = '0px';
+                movesLabelText.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
                 movesLabelText.text = 'MOVES:';
                 movesSection.addControl(movesLabelText);
-                const movesLabelValue = createStatTextBlock('txtMovesValue');
-                movesLabelValue.top = '50px';
+                const movesLabelValue = GUI.createStandardTextBlock();
+                movesLabelValue.top = '0px';
+                movesLabelValue.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
                 movesLabelValue.text = '';
                 onRubiksCreate.add((rubiksCube) => rubiksCube.onMoveMade.add((moveCount) => movesLabelValue.text = moveCount + ''));
                 movesSection.addControl(movesLabelValue);
                 const timeSection = new BABYLON.GUI.Container('');
-                timeSection.width = '233px';
+                timeSection.width = '200px';
                 timeSection.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
                 statsPanel.addControl(timeSection);
-                const timeLabelText = createStatTextBlock();
+                const timeLabelText = GUI.createStandardTextBlock();
                 timeLabelText.top = '0px';
+                timeLabelText.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
                 timeLabelText.text = 'TIMER:';
                 timeSection.addControl(timeLabelText);
-                const timeValueText = createStatTextBlock('txtTimerValue');
-                timeValueText.top = '50px';
+                const timeValueText = GUI.createStandardTextBlock();
+                timeValueText.top = '0px';
+                timeValueText.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
                 timeValueText.text = '';
                 timeSection.addControl(timeValueText);
                 onRubiksCreate.add((rubiksCube) => rubiksCube.onClockTick.add((timeStr) => timeValueText.text = timeStr));
                 const widthSection = new BABYLON.GUI.Container('');
-                widthSection.width = '233px';
+                widthSection.width = '200px';
                 widthSection.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
                 statsPanel.addControl(widthSection);
-                const cubeWidthLabelText = createStatTextBlock();
+                const cubeWidthLabelText = GUI.createStandardTextBlock();
                 cubeWidthLabelText.top = '0px';
+                cubeWidthLabelText.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
                 cubeWidthLabelText.text = 'WIDTH:';
                 widthSection.addControl(cubeWidthLabelText);
-                const cubeWidthValueText = createStatTextBlock();
-                cubeWidthValueText.top = '50px';
+                const cubeWidthValueText = GUI.createStandardTextBlock();
+                cubeWidthValueText.top = '0px';
+                cubeWidthValueText.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
                 cubeWidthValueText.text = ':';
                 widthSection.addControl(cubeWidthValueText);
                 onRubiksCreate.add((rubiksCube) => rubiksCube.onCreate.add(creationOptions => cubeWidthValueText.text = creationOptions.width + ""));
@@ -438,12 +431,12 @@ class Playground {
                     optionsPanel.width = '500px';
                     optionsPanel.height = '500px';
                     optionsContainer.addControl(optionsPanel);
-                    const topText = createStatTextBlock('');
+                    const topText = GUI.createStandardTextBlock();
                     topText.text = 'NEW GAME';
                     topText.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
                     topText.top = '30px';
                     optionsPanel.addControl(topText);
-                    const sliderWidthValueText = createStatTextBlock('');
+                    const sliderWidthValueText = GUI.createStandardTextBlock();
                     sliderWidthValueText.fontSize = '30px';
                     sliderWidthValueText.top = '160px';
                     optionsPanel.addControl(sliderWidthValueText);
@@ -460,7 +453,7 @@ class Playground {
                     cubeWidthSlider.onValueChangedObservable.add(() => sliderWidthValueText.text = `CUBE WIDTH: ${cubeWidthSlider.value}`);
                     onRubiksCreate.add(rubiksCube => rubiksCube.onCreate.add((options) => cubeWidthSlider.value = options.width));
                     optionsPanel.addControl(cubeWidthSlider);
-                    const sliderShufflesValueText = createStatTextBlock('');
+                    const sliderShufflesValueText = GUI.createStandardTextBlock();
                     sliderShufflesValueText.fontSize = '30px';
                     sliderShufflesValueText.top = '260px';
                     optionsPanel.addControl(sliderShufflesValueText);
@@ -552,15 +545,25 @@ class Playground {
                 const twitterIcon = new SocialMediaIcon('icons/twitter.svg', 'https://twitter.com/blindinghues');
                 twitterIcon.getContainer().width = '75px';
                 twitterIcon.getContainer().height = '75px';
-                twitterIcon.getContainer().left = '0px';
+                twitterIcon.getContainer().top = '-80px';
                 twitterIcon.getContainer().verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
                 twitterIcon.getContainer().horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
                 const githubIcon = new SocialMediaIcon('icons/github.svg', 'https://github.com/blindinghues');
                 githubIcon.getContainer().width = '75px';
                 githubIcon.getContainer().height = '75px';
-                githubIcon.getContainer().left = '80px';
                 githubIcon.getContainer().verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
                 githubIcon.getContainer().horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+            }
+            static createStandardTextBlock() {
+                const textBlock = new BABYLON.GUI.TextBlock('');
+                textBlock.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+                textBlock.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
+                textBlock.resizeToFit = true;
+                textBlock.top = '100px';
+                textBlock.color = 'white';
+                textBlock.fontSizeInPixels = 40;
+                textBlock.paddingLeft = '20px';
+                return textBlock;
             }
             static loadResources() {
                 return new Promise((resolve, reject) => {
