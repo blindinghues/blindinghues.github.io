@@ -23,8 +23,8 @@ class Playground {
         const light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
         light.intensity = 0.7;
 
-        const radialPlaneBackground: BABYLON.Mesh = BABYLON.MeshBuilder.CreatePlane('', { size: 50 }, scene);
-        radialPlaneBackground.position.z = 20;
+        const radialPlaneBackground: BABYLON.Mesh = BABYLON.MeshBuilder.CreatePlane('', { size: 100 }, scene);
+        radialPlaneBackground.position.z = 40;
         radialPlaneBackground.parent = camera;
         radialPlaneBackground.isPickable = false;
         const radialPlaneMaterial: BABYLON.StandardMaterial = new BABYLON.StandardMaterial('', scene);
@@ -404,16 +404,17 @@ class Playground {
         }
 
         class GUI {
-            public constructor() {
-                const gui = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI('');
-                gui.idealHeight = 1080;
+            public populateGUI() {
+                this.loadingTextContainer.dispose();
+                clearInterval(this.loadingTextUpdateHandle);
+                this.loadingTextUpdateHandle = null;
 
                 // Game container
                 const gameContainer: BABYLON.GUI.Container = new BABYLON.GUI.Container('');
-                gui.addControl(gameContainer);
+                this.gui.addControl(gameContainer);
                     const gameOverText: BABYLON.GUI.TextBlock = new BABYLON.GUI.TextBlock('', 'You solved it!');
                     gameOverText.color = 'white';
-                    gameOverText.fontSizeInPixels = 130;
+                    gameOverText.fontSize = '130px';
                     gameOverText.isVisible = false;
                     gameOverText.shadowOffsetX = 5;
                     gameOverText.shadowOffsetY = 5;
@@ -427,7 +428,7 @@ class Playground {
                     resetButton.width = '350px';
                     resetButton.height = '100px';
                     resetButton.background = 'grey';
-                    resetButton.fontSizeInPixels = 40;
+                    resetButton.fontSize = '40px';
                     resetButton.color = 'white';
                     resetButton.onPointerClickObservable.add(() => {
                         GUI.BUTTON_CLICK_SOUND.play();
@@ -435,6 +436,20 @@ class Playground {
                         optionsContainer.isVisible = true;
                     });
                     gameContainer.addControl(resetButton);
+                    const helpButton = BABYLON.GUI.Button.CreateSimpleButton("shuffleButton", "?");
+                    helpButton.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
+                    helpButton.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
+                    helpButton.width = '100px';
+                    helpButton.height = '100px';
+                    helpButton.background = 'grey';
+                    helpButton.fontSize = '40px';
+                    helpButton.color = 'white';
+                    helpButton.onPointerClickObservable.add(() => {
+                        GUI.BUTTON_CLICK_SOUND.play();
+                        gameContainer.isVisible = false;
+                        helpContainer.isVisible = true;
+                    });
+                    gameContainer.addControl(helpButton);
                     const bottomText: BABYLON.GUI.TextBlock = new BABYLON.GUI.TextBlock('');
                     bottomText.resizeToFit = true;
                     bottomText.text = 'Drag across tiles to move';
@@ -454,6 +469,7 @@ class Playground {
                         const movesSection: BABYLON.GUI.Container = new BABYLON.GUI.Container('');
                         movesSection.width = '200px';
                         movesSection.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+                        movesSection.paddingLeft = '20px'; 
                         statsPanel.addControl(movesSection);
                             const movesLabelText: BABYLON.GUI.TextBlock = GUI.createStandardTextBlock();
                             movesLabelText.top = '0px';
@@ -482,6 +498,7 @@ class Playground {
                             timeSection.addControl(timeValueText);
                             onRubiksCreate.add((rubiksCube) => rubiksCube.onClockTick.add((timeStr) => timeValueText.text = timeStr));
                         const widthSection: BABYLON.GUI.Container = new BABYLON.GUI.Container('');
+                        widthSection.paddingRight = '20px';
                         widthSection.width = '200px';
                         widthSection.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
                         statsPanel.addControl(widthSection);
@@ -499,13 +516,67 @@ class Playground {
                                 rubiksCube.onCreate.add(creationOptions => cubeWidthValueText.text = creationOptions.width + "")
                             );
 
+                // Help container
+                const helpContainer: BABYLON.GUI.Container = new BABYLON.GUI.Container('');
+                {
+                    helpContainer.isPointerBlocker = true;
+                    helpContainer.isVisible = false;
+                    helpContainer.zIndex = 999;
+                    this.gui.addControl(helpContainer);
+                        const helpPanel: BABYLON.GUI.Container = new BABYLON.GUI.Container('');
+                        helpPanel.background = 'rgba(0, 0, 0, 0.8)';
+                        helpPanel.width = '500px';
+                        helpPanel.height = '500px';
+                        helpContainer.addControl(helpPanel);
+                            const topText = GUI.createStandardTextBlock();
+                            topText.text = 'Controls';
+                            topText.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
+                            topText.top = '30px';
+                            helpPanel.addControl(topText);
+                            const detailsText = GUI.createStandardTextBlock();
+                            detailsText.textWrapping = true;
+                            detailsText.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+                            detailsText.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+                            detailsText.fontSize = '25px';
+                            detailsText.paddingLeft = '20px';
+                            detailsText.text = `
+Drag on the background to rotate the view
+
+Drag across cube tiles to perform moves
+
+Click 'new game' to reset
+
+
+Have fun!
+                            `;
+                            detailsText.top = '80px';
+                            helpPanel.addControl(detailsText);
+
+
+                            const backButton = BABYLON.GUI.Button.CreateSimpleButton('', "BACK");
+                            backButton.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
+                            backButton.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
+                            backButton.top = '-18px';
+                            backButton.width = '200px';
+                            backButton.height = '80px';
+                            backButton.background = 'grey';
+                            backButton.fontSize = '40px';
+                            backButton.color = 'white';
+                            backButton.onPointerClickObservable.add(() => {
+                                GUI.BUTTON_BACK_SOUND.play();
+                                helpContainer.isVisible = false;
+                                gameContainer.isVisible = true;
+                            });
+                            helpPanel.addControl(backButton);
+                }
+
                 // Options container
                 const optionsContainer: BABYLON.GUI.Container = new BABYLON.GUI.Container('');
                 {
                     optionsContainer.isPointerBlocker = true;
                     optionsContainer.isVisible = false;
                     optionsContainer.zIndex = 999;
-                    gui.addControl(optionsContainer);
+                    this.gui.addControl(optionsContainer);
                         const optionsPanel: BABYLON.GUI.Container = new BABYLON.GUI.Container('');
                         optionsPanel.background = 'rgba(0, 0, 0, 0.8)';
                         optionsPanel.width = '500px';
@@ -517,6 +588,7 @@ class Playground {
                             topText.top = '30px';
                             optionsPanel.addControl(topText);
                             const sliderWidthValueText = GUI.createStandardTextBlock();
+                            sliderWidthValueText.paddingLeft = '20px';
                             sliderWidthValueText.fontSize = '30px';
                             sliderWidthValueText.top = '160px';
                             optionsPanel.addControl(sliderWidthValueText);
@@ -537,6 +609,7 @@ class Playground {
                             optionsPanel.addControl(cubeWidthSlider);
 
                             const sliderShufflesValueText = GUI.createStandardTextBlock();
+                            sliderShufflesValueText.paddingLeft = '20px';
                             sliderShufflesValueText.fontSize = '30px';
                             sliderShufflesValueText.top = '260px';
                             optionsPanel.addControl(sliderShufflesValueText);
@@ -564,7 +637,7 @@ class Playground {
                             backButton.width = '200px';
                             backButton.height = '80px';
                             backButton.background = 'grey';
-                            backButton.fontSizeInPixels = 40;
+                            backButton.fontSize = '40px';
                             backButton.color = 'white';
                             backButton.onPointerClickObservable.add(() => {
                                 GUI.BUTTON_BACK_SOUND.play();
@@ -580,7 +653,7 @@ class Playground {
                             createButton.width = '200px';
                             createButton.height = '80px';
                             createButton.background = 'grey';
-                            createButton.fontSizeInPixels = 40;
+                            createButton.fontSize = '40px';
                             createButton.color = 'white';
                             createButton.onPointerClickObservable.add(() => {
                                 GUI.BUTTON_CONFIRM_SOUND.play();
@@ -641,15 +714,35 @@ class Playground {
                 githubIcon.getContainer().verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
                 githubIcon.getContainer().horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
             }
+            public constructor() {
+                const gui = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI('');
+                gui.idealHeight = 1080;
+                this.gui = gui;
+
+                const loadingTextContainer: BABYLON.GUI.Container = new BABYLON.GUI.Container('');
+                this.loadingTextContainer = loadingTextContainer;
+                loadingTextContainer.width = '550px';
+                gui.addControl(loadingTextContainer);
+                const loadingText: BABYLON.GUI.TextBlock = new BABYLON.GUI.TextBlock('');
+                let dotCount = 1;
+                this.loadingTextUpdateHandle = setInterval(() => {
+                    dotCount = 1 + (dotCount % 3);
+                    loadingText.text = 'LOADING' + new Array(dotCount).fill(null).map(x => '.').join('')
+                }, 500);
+                loadingText.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+                loadingText.text = "LOADING.";
+                loadingText.resizeToFit = true;
+                loadingText.color = 'white';
+                loadingText.fontSize = '100px';
+                loadingTextContainer.addControl(loadingText);
+            }
             private static createStandardTextBlock(): BABYLON.GUI.TextBlock {
                 const textBlock: BABYLON.GUI.TextBlock = new BABYLON.GUI.TextBlock('');
                 textBlock.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
                 textBlock.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
                 textBlock.resizeToFit = true;
-                textBlock.top = '100px';
                 textBlock.color = 'white';
-                textBlock.fontSizeInPixels = 40;
-                textBlock.paddingLeft = '20px';
+                textBlock.fontSize = '40px';
                 return textBlock;
             }
             public static loadResources(): Promise<void> {
@@ -678,9 +771,13 @@ class Playground {
             private static BUTTON_CLICK_SOUND: BABYLON.Sound;
             private static BUTTON_BACK_SOUND: BABYLON.Sound;
             private static BUTTON_CONFIRM_SOUND: BABYLON.Sound;
+            private gui: BABYLON.GUI;
+            private loadingTextContainer: BABYLON.GUI.LoadingTextContainer;
+            private loadingTextUpdateHandle: any;
         }
 
         let rubiksCube: RubiksCube = null;
+        let gui: BABYLON.GUI = new GUI();
         const onRubiksCreate: BABYLON.Observable<RubiksCube> = new BABYLON.Observable();
 
         // load resources before creating GUI & cube
@@ -688,7 +785,7 @@ class Playground {
             RubiksCube.loadResources(),
             GUI.loadResources()
         ]).then(() => {
-            new GUI();
+            gui.populateGUI();
             rubiksCube = new RubiksCube({width: 3, shuffleCount: 0});
             onRubiksCreate.notifyObservers(rubiksCube);
             rubiksCube.initEvents();
