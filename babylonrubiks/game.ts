@@ -3,6 +3,8 @@
  * Ambient music obtained from Axletree https://www.youtube.com/channel/UCU4a-7qXkoscDDFI3aYhi_g via FMA
  */
 
+//
+
 class Playground {
     public static CreateScene(engine: BABYLON.Engine, canvas: HTMLCanvasElement): BABYLON.Scene {
         const scene = new BABYLON.Scene(engine);

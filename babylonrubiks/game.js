@@ -2,6 +2,7 @@
  * Sound effects obtained from https://www.zapsplat.com
  * Ambient music obtained from Axletree https://www.youtube.com/channel/UCU4a-7qXkoscDDFI3aYhi_g via FMA
  */
+//
 class Playground {
     static CreateScene(engine, canvas) {
         const scene = new BABYLON.Scene(engine);
