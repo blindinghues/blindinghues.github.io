@@ -4,6 +4,7 @@
  */
 
 //
+//
 
 class Playground {
     public static CreateScene(engine: BABYLON.Engine, canvas: HTMLCanvasElement): BABYLON.Scene {

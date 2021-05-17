@@ -3,6 +3,7 @@
  * Ambient music obtained from Axletree https://www.youtube.com/channel/UCU4a-7qXkoscDDFI3aYhi_g via FMA
  */
 //
+//
 class Playground {
     static CreateScene(engine, canvas) {
         const scene = new BABYLON.Scene(engine);
@@ -34,9 +35,7 @@ class Playground {
             return arr[Math.floor(arr.length * Math.random())];
         }
         class RotationAxis {
-            constructor(component) {
-                this.component = component;
-            }
+            constructor(component) { this.component = component; }
             getComponent() { return this.component; }
         }
         RotationAxis.Pitch = new RotationAxis('x');
