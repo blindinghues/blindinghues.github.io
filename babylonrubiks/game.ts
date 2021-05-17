@@ -792,6 +792,7 @@ Have fun!
             rubiksCube = new RubiksCube({width: 3, shuffleCount: 0});
             onRubiksCreate.notifyObservers(rubiksCube);
             rubiksCube.initEvents();
+            rubiksCube.shuffle();
         });
 
         return scene;
