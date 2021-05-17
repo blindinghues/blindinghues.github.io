@@ -164,7 +164,7 @@ class Playground {
                             planeMesh.isVisible = true;
                             planeMesh.isPickable = true;
                             planeMesh.parent = cube;
-                            planeMesh.position = planeDetails.normal.scale(0.5001).clone();
+                            planeMesh.position = planeDetails.normal.scale(0.501).clone();
                             planeMesh.rotation = planeDetails.rotation.clone();
                             this.sidePlaneToCubeMesh.set(planeMesh, cube);
                             this.materialToSidePlanes.get(material).push(planeMesh);
