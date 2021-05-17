@@ -789,7 +789,7 @@ Have fun!
             GUI.loadResources()
         ]).then(() => {
             gui.populateGUI();
-            rubiksCube = new RubiksCube({width: 3, shuffleCount: 0});
+            rubiksCube = new RubiksCube({width: 3, shuffleCount: 40});
             onRubiksCreate.notifyObservers(rubiksCube);
             rubiksCube.initEvents();
             rubiksCube.shuffle();
